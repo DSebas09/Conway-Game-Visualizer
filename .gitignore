@@ -1,4 +1,10 @@
-/.idea
+# IDE files
+.idea/
+
+# Environment and Configuration files
+config/.env
+phpunit.xml
+*.log
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
