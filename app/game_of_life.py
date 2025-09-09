@@ -33,48 +33,78 @@ class GameOfLife:
         elif 0 <= row < self.height and 0 <= col < self.width:
             self.grid[row][col] = val
 
-    def step(self):
+    @staticmethod
+    def _apply_conway_rules(grid: list[list[int]]) -> list[list[int]]:
+        rows = len(grid)
+        cols = len(grid[0]) if rows else 0
+
         # We create a new, empty grid.
         # This is so we can create the next step's state without affecting the current state.
-        new_grid = []
-        for y in range(self.height):
-            new_row = []
-            for x in range(self.width):
-                new_row.append(0)
-            new_grid.append(new_row)
+        new_grid = [[0] * cols for _ in range(rows)]
+
+        # Offset of the 8 neighbors
+        neighbor_offsets = [
+            (-1, -1), (-1, 0), (-1, 1),
+            (0, -1),           (0, 1),
+            (1, -1),  (1, 0),  (1, 1),
+        ]
 
         # We loop through each cell of the original grid
-        for y in range(self.height):
-            for x in range(self.width):
-                # So now we are in the current cell
-                # Count living neighbors
+        for row in range(rows):
+            for col in range(cols):
                 neighbors = 0
-                for i in [-1, 0, 1]:
-                    for j in [-1, 0, 1]:
-                        if i == 0 and j == 0:
-                            # We do not count the current cell, since we only want the neighbors
-                            # i = 0 and j = 0 would leave us in the same cell as the current loop
-                            continue
-                        # Use % to apply a “circular” border
-                        neighbor_y = (y + i) % self.height
-                        neighbor_x = (x + j) % self.width
-                        # We want the sum of how many neighbors there are
-                        neighbors += self.grid[neighbor_y][neighbor_x]
+                for row_offset, col_offset in neighbor_offsets:
+                    neighbor_row, neighbor_col = row + row_offset, col + col_offset
+                    if 0 <= neighbor_row < rows and 0 <= neighbor_col < cols:
+                        neighbors += grid[neighbor_row][neighbor_col]
 
                 # We apply Conway's rules
-                if self.grid[y][x] == 1:  # Living cell
-                    if neighbors == 2 or neighbors == 3:
-                        new_grid[y][x] = 1  # Survive
-                    else:
-                        new_grid[y][x] = 0  # Dies
+                if grid[row][col] == 1:  # Living cell
+                    new_grid[row][col] = 1 if (neighbors == 2 or neighbors == 3) else 0
                 else:  # Dead Cell
-                    if neighbors == 3:
-                        new_grid[y][x] = 1  # Born
-                    else:
-                        new_grid[y][x] = 0  # No change
+                    new_grid[row][col] = 1 if neighbors == 3 else 0
 
-        self.grid = new_grid
-        return self.grid
+        return new_grid
+
+    def _extract_subgrid(self, min_row, max_row, min_col, max_col):
+        rows = max_row - min_row
+        cols = max_col - min_col
+        sub_grid = [[0] * cols for _ in range(rows)]
+        for row in range(rows):
+            for col in range(cols):
+                sub_grid[row][col] = self._get_cell(min_row + row, min_col + col)
+        return sub_grid
+
+    def step(self, viewport_x, viewport_y, visible_rows, visible_cols, margin=1):
+        # Compute region bounds. The region includes not only the viewport,
+        # but also a 1-cell "border" around it (by default). This gives us enough context to calculate the neighbors.
+        min_row = viewport_y - margin
+        min_col = viewport_x - margin
+        max_row = viewport_y + visible_rows + margin
+        max_col = viewport_x + visible_cols + margin
+
+        # Extract the region that we are interested in rendering
+        subgrid = self._extract_subgrid(min_row, max_row, min_col, max_col)
+
+        # Now apply Conway's rules for that region
+        new_subgrid = self._apply_conway_rules(subgrid)
+
+        # Only cells within the viewport are written back to the world.
+        # The margin is ignored because it only served as a context for calculating neighbors
+        rows_sub = len(subgrid)
+        cols_sub = len(subgrid[0])
+        for row in range(rows_sub):
+            viewport_row = min_row + row
+            for col in range(cols_sub):
+                if margin <= row < rows_sub - margin and margin <= col < cols_sub - margin:
+                    viewport_col = min_col + col
+                    self._set_cell(viewport_row, viewport_col, new_subgrid[row][col])
+
+        # return only the clean viewport, ready to render on the frontend
+        visible = []
+        for row in range(margin, rows_sub - margin):
+            visible.append(new_subgrid[row][margin:cols_sub - margin])
+        return visible
 
 
 def print_grid(grid):
