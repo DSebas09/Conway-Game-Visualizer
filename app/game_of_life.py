@@ -115,14 +115,13 @@ if __name__ == "__main__":
     grid_height = 5  # rows
     grid_width = 10  # columns
 
-    game = GameOfLife(grid_height, grid_width)
-    game.randomize()
+    game = GameOfLife(grid_height, grid_width)  # If wrap is left as true, remember that the world is toroidal
+    game.randomize(prob=0.4)
+
     print("Initial state:")
     print_grid(game.grid)
 
-    game.step()
-    print("Después de un paso:")
     for step in range(5):
+        game.step(0, 0, 5, 10)
         print(f"Step {step + 1}:")
         print_grid(game.grid)
-        game.step()
