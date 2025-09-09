@@ -18,6 +18,21 @@ class GameOfLife:
             new_grid.append(row)
         self.grid = new_grid
 
+    def _get_cell(self, row, col):
+        if self.wrap:
+            return self.grid[row % self.height][col % self.width]
+
+        if 0 <= row < self.height and 0 <= col < self.width:
+            return self.grid[row][col]
+
+        return 0
+
+    def _set_cell(self, row, col, val):
+        if self.wrap:
+            self.grid[row % self.height][col % self.width] = val
+        elif 0 <= row < self.height and 0 <= col < self.width:
+            self.grid[row][col] = val
+
     def step(self):
         # We create a new, empty grid.
         # This is so we can create the next step's state without affecting the current state.
