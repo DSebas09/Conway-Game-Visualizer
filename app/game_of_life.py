@@ -2,9 +2,10 @@ import random
 
 
 class GameOfLife:
-    def __init__(self, height=30, width=50):
+    def __init__(self, height=30, width=50, wrap=True):
         self.height = height
         self.width = width
+        self.wrap = wrap
         self.grid = [[0]*width for _ in range(height)]
 
     def randomize(self):
