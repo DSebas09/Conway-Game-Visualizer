@@ -8,15 +8,11 @@ class GameOfLife:
         self.wrap = wrap
         self.grid = [[0]*width for _ in range(height)]
 
-    def randomize(self):
-        new_grid = []
-        for y in range(self.height):
-            row = []
-            for x in range(self.width):
-                cell = random.randint(0, 1)
-                row.append(cell)
-            new_grid.append(row)
-        self.grid = new_grid
+    def randomize(self, prob: float = 0.5) -> None:
+        for row in range(self.height):
+            grid_row = self.grid[row]
+            for col in range(self.width):
+                grid_row[col] = 1 if random.random() < prob else 0
 
     def _get_cell(self, row, col):
         if self.wrap:
